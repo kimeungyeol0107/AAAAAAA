@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>돈 클릭랭커 게임</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+        #user-id {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            color: #007bff;
+        }
+        #money-display {
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+        #last-earned {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: #555;
+        }
+        #probability-display {
+            font-size: 1.2em;
+            margin-top: 10px;
+            color: #007bff;
+        }
+        #increment-button, #rank-button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.5em;
+            cursor: pointer;
+            border-radius: 10px;
+            margin: 10px;
+        }
+        #increment-button:hover, #rank-button:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="user-id"></div>
+    <div id="money-display">0머니</div>
+    <div id="last-earned">최근 획득한 금액: 0머니</div>
+    <div id="probability-display"></div>
+    <button id="increment-button">머니 올리기</button>
+    <button id="rank-button">랭킹 보내기</button>
+
+    <script>
+        // 로컬 스토리지에서 기존 금액을 가져옵니다.
+        let money = localStorage.getItem('money') ? parseInt(localStorage.getItem('money')) : 0;
+
+        // 고유 ID를 생성하고 로컬 스토리지에 저장 (이미 저장된 경우 재사용)
+        let userId = localStorage.getItem('userId');
+        if (!userId) {
+            userId = 'user_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('userId', userId);
+        }
+
+        // 사용자 ID를 화면에 표시
+        document.getElementById('user-id').textContent = `ID: ${userId}`;
+
+        // 쿨타임 설정 (1200초 = 20분)
+        const cooldownTime = 1200 * 1000; // 밀리초 단위
+
+        // 금액을 화면에 표시하는 함수
+        function updateDisplay() {
+            document.getElementById('money-display').textContent = money + '머니';
+        }
+
+        // 돈을 획득하는 함수
+        function earnMoney() {
+            const random = Math.random() * 100; // 0에서 100 사이의 난수 생성
+            let earned = 0;
+            let probabilityText = "";
+
+            if (random < 1) {
+                earned = 100; // 1% 확률로 100머니
+                probabilityText = "1% 확률";
+            } else if (random < 30) {
+                earned = 1;   // 29% 확률로 1머니
+                probabilityText = "29% 확률";
+            } else {
+                earned = 0;   // 70% 확률로 0머니
+                probabilityText = "70% 확률";
+            }
+
+            money += earned;
+            localStorage.setItem('money', money);
+            document.getElementById('last-earned').textContent = `최근 획득한 금액: ${earned}머니`;
+            document.getElementById('probability-display').textContent = `이번에 선택된 확률: ${probabilityText}`;
+            updateDisplay();
+        }
+
+        // 랭킹 정보를 디스코드 웹훅으로 보내는 함수
+        function sendRanking() {
+            const lastSendTime = localStorage.getItem('lastSendTime');
+            const currentTime = new Date().getTime();
+
+            if (lastSendTime && (currentTime - lastSendTime < cooldownTime)) {
+                const remainingTime = Math.ceil((cooldownTime - (currentTime - lastSendTime)) / 1000);
+                alert(`쿨타임이 ${remainingTime}초 남았습니다.`);
+                return;
+            }
+
+            const webhookUrl = 'https://discord.com/api/webhooks/1275072521930281033/j4ca8COSVSfMESw3qiKeq72oNldF58oIuyUPJKmXhi2WvKi_CBeABhnYaTxv1pm8YRpU'; // 디스코드 웹훅 URL
+            const data = {
+                content: `${userId}님의 누적 금액: ${money}머니`
+            };
+
+            fetch(webhookUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            }).then(response => {
+                if (response.ok) {
+                    localStorage.setItem('lastSendTime', currentTime);
+                    alert('랭킹 정보가 디스코드로 전송되었습니다!');
+                } else {
+                    alert('랭킹 정보 전송에 실패했습니다.');
+                }
+            }).catch(error => {
+                console.error('Error:', error);
+                alert('랭킹 정보 전송 중 오류가 발생했습니다.');
+            });
+        }
+
+        // 이벤트 리스너 설정
+        document.getElementById('increment-button').addEventListener('click', earnMoney);
+        document.getElementById('rank-button').addEventListener('click', sendRanking);
+
+        // 페이지 로드 시 기존 금액을 표시
+        updateDisplay();
+    </script>
+
+</body>
+</html>

@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>돈 클릭랭커 게임</title>
     <style>
-        /* 스타일은 그대로 유지 */
         body {
             font-family: Arial, sans-serif;
             text-align: center;
@@ -46,13 +45,6 @@
         .auth-section {
             margin-top: 20px;
         }
-        .auth-input {
-            margin: 10px;
-            padding: 10px;
-            font-size: 1em;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
         .auth-button {
             background-color: #007bff;
             color: white;
@@ -73,10 +65,7 @@
     <!-- Authentication Section -->
     <div id="auth-section">
         <h2>로그인</h2>
-        <input id="email" class="auth-input" type="email" placeholder="이메일">
-        <input id="password" class="auth-input" type="password" placeholder="비밀번호">
-        <button id="login-button" class="auth-button">로그인</button>
-        <button id="signup-button" class="auth-button">회원가입</button>
+        <button id="google-login-button" class="auth-button">구글로 로그인</button>
         <button id="logout-button" class="auth-button" style="display:none;">로그아웃</button>
     </div>
 
@@ -93,7 +82,7 @@
     <!-- Firebase App (필수) -->
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
-      import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+      import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
       import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
       
       const firebaseConfig = {
@@ -117,7 +106,7 @@
         if (user) {
           document.getElementById('auth-section').style.display = 'none';
           document.getElementById('game-section').style.display = 'block';
-          document.getElementById('user-id').textContent = `ID: ${user.uid}`;
+          document.getElementById('user-id').textContent = `ID: ${user.displayName || user.email}`;
           loadMoney();
         } else {
           document.getElementById('auth-section').style.display = 'block';
@@ -125,31 +114,16 @@
         }
       });
 
-      // 로그인 함수
-      document.getElementById('login-button').addEventListener('click', () => {
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        signInWithEmailAndPassword(auth, email, password)
-          .then(async (userCredential) => {
-            const user = userCredential.user;
-            // 로그인 성공 후 추가 작업이 필요하면 여기에 작성
+      // 구글 로그인 함수
+      document.getElementById('google-login-button').addEventListener('click', () => {
+        const provider = new GoogleAuthProvider();
+        signInWithPopup(auth, provider)
+          .then(async (result) => {
+            const user = result.user;
+            // 추가 작업이 필요하면 여기에 작성
           })
           .catch((error) => {
             alert('로그인 실패: ' + error.message);
-          });
-      });
-
-      // 회원가입 함수
-      document.getElementById('signup-button').addEventListener('click', () => {
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        createUserWithEmailAndPassword(auth, email, password)
-          .then(async (userCredential) => {
-            const user = userCredential.user;
-            // 회원가입 성공 후 추가 작업이 필요하면 여기에 작성
-          })
-          .catch((error) => {
-            alert('회원가입 실패: ' + error.message);
           });
       });
 

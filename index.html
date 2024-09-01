@@ -58,6 +58,9 @@
         .auth-button:hover {
             background-color: #0056b3;
         }
+        #logout-button {
+            display: none; /* Initially hidden */
+        }
     </style>
 </head>
 <body>
@@ -66,7 +69,6 @@
     <div id="auth-section">
         <h2>로그인</h2>
         <button id="google-login-button" class="auth-button">구글로 로그인</button>
-        <button id="logout-button" class="auth-button" style="display:none;">로그아웃</button>
     </div>
 
     <!-- Game Section -->
@@ -77,6 +79,7 @@
         <div id="probability-display"></div>
         <button id="increment-button">머니 올리기</button>
         <button id="rank-button">랭킹 보내기</button>
+        <button id="logout-button" class="auth-button">로그아웃</button>
     </div>
 
     <!-- Firebase App (필수) -->

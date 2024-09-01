@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>돈 클릭랭커 게임</title>
     <style>
-        /* 스타일은 그대로 유지 */
         body {
             font-family: Arial, sans-serif;
             text-align: center;
@@ -73,11 +72,10 @@
     <!-- Authentication Section -->
     <div id="auth-section">
         <h2>로그인</h2>
-        <input id="phone-number" class="auth-input" type="text" placeholder="전화번호">
+        <input id="phone-number" class="auth-input" type="text" placeholder="전화번호 (예: 01012345678)">
         <button id="login-button" class="auth-button">로그인</button>
-        <button id="signup-button" class="auth-button">회원가입</button>
+        <button id="signup-button" class="auth-button" style="display:none;">회원가입</button>
         <button id="logout-button" class="auth-button" style="display:none;">로그아웃</button>
-        <div id="recaptcha-container"></div>
     </div>
 
     <!-- Game Section -->
@@ -93,9 +91,9 @@
     <!-- Firebase App (필수) -->
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
-      import { getAuth, signInWithPhoneNumber, signOut, onAuthStateChanged, RecaptchaVerifier } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+      import { getAuth, signInWithPhoneNumber, RecaptchaVerifier, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
       import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
-      
+
       const firebaseConfig = {
         apiKey: "AIzaSyAwV8u5P9-MFH7Wr3aCKRMesmetMDFF4VA",
         authDomain: "money0107-50727.firebaseapp.com",
@@ -111,17 +109,6 @@
       const db = getFirestore(app);
 
       let money = 0;
-      let recaptchaVerifier;
-
-      // ReCAPTCHA verifier 설정
-      function setupRecaptcha() {
-        recaptchaVerifier = new RecaptchaVerifier('recaptcha-container', {
-          size: 'invisible',
-          callback: (response) => {
-            // 성공적으로 ReCAPTCHA 인증이 완료되었을 때
-          }
-        }, auth);
-      }
 
       // 인증 상태 변경 감지
       onAuthStateChanged(auth, (user) => {
@@ -136,41 +123,25 @@
         }
       });
 
-      // 전화번호로 로그인 함수
+      // 로그인 함수
       document.getElementById('login-button').addEventListener('click', () => {
         const phoneNumber = document.getElementById('phone-number').value;
-        const appVerifier = recaptchaVerifier;
+        const appVerifier = window.recaptchaVerifier;
 
         signInWithPhoneNumber(auth, phoneNumber, appVerifier)
           .then((confirmationResult) => {
-            const verificationCode = prompt('Verification code');
-            return confirmationResult.confirm(verificationCode);
+            const code = prompt('인증 코드를 입력하세요.');
+            return confirmationResult.confirm(code);
           })
           .then((result) => {
+            // 로그인 성공
             const user = result.user;
-            const deviceId = getDeviceId();
-            const docRef = doc(db, 'devices', user.uid);
-
-            getDoc(docRef).then(async (docSnap) => {
-              if (docSnap.exists()) {
-                const data = docSnap.data();
-                if (data.deviceId !== deviceId) {
-                  alert('이 계정은 다른 기기에서 이미 로그인되어 있습니다.');
-                  await signOut(auth);
-                }
-              } else {
-                await setDoc(docRef, { deviceId: deviceId });
-              }
-            }).catch((error) => {
-              alert('로그인 실패: ' + error.message);
-            });
+            console.log('로그인 성공:', user.uid);
           })
           .catch((error) => {
             alert('로그인 실패: ' + error.message);
           });
       });
-
-      // 회원가입 함수는 별도의 전화번호 인증 절차가 필요 없으므로 생략
 
       // 로그아웃 함수
       document.getElementById('logout-button').addEventListener('click', () => {
@@ -182,11 +153,6 @@
             alert('로그아웃 실패: ' + error.message);
           });
       });
-
-      // 기기 ID 가져오기
-      function getDeviceId() {
-        return navigator.userAgent;
-      }
 
       // Firestore에서 금액을 불러오는 함수
       async function loadMoney() {
@@ -278,8 +244,15 @@
       // 쿨타임 설정 (1200초 = 20분)
       const cooldownTime = 1200 * 1000; // 밀리초 단위
 
-      // ReCAPTCHA 초기화
-      setupRecaptcha();
+      // reCAPTCHA verifier 설정
+      window.onload = function() {
+        window.recaptchaVerifier = new RecaptchaVerifier('login-button', {
+          'size': 'invisible',
+          'callback': function(response) {
+            // reCAPTCHA가 성공적으로 해결되었을 때의 콜백
+          }
+        }, auth);
+      }
     </script>
 
 </body>

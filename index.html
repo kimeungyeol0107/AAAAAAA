@@ -118,7 +118,7 @@
           document.getElementById('auth-section').style.display = 'none';
           document.getElementById('game-section').style.display = 'block';
           document.getElementById('user-id').textContent = `ID: ${user.uid}`;
-          loadMoney();
+          loadMoney(); // 로그인 시 돈을 불러옵니다
         } else {
           // 사용자 로그아웃 상태
           document.getElementById('auth-section').style.display = 'block';

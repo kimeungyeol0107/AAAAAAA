@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>돈 클릭랭커 게임</title>
     <style>
+        /* 스타일은 그대로 유지 */
         body {
             font-family: Arial, sans-serif;
             text-align: center;
@@ -29,7 +30,7 @@
             margin-top: 10px;
             color: #007bff;
         }
-        #increment-button, #rank-button {
+        #increment-button, #rank-button, #logout-button {
             background-color: #28a745;
             color: white;
             border: none;
@@ -39,11 +40,18 @@
             border-radius: 10px;
             margin: 10px;
         }
-        #increment-button:hover, #rank-button:hover {
+        #increment-button:hover, #rank-button:hover, #logout-button:hover {
             background-color: #218838;
         }
         .auth-section {
             margin-top: 20px;
+        }
+        .auth-input {
+            margin: 10px;
+            padding: 10px;
+            font-size: 1em;
+            border: 1px solid #ccc;
+            border-radius: 5px;
         }
         .auth-button {
             background-color: #007bff;
@@ -58,8 +66,10 @@
         .auth-button:hover {
             background-color: #0056b3;
         }
-        #logout-button {
-            display: none; /* Initially hidden */
+        #notice {
+            margin-top: 20px;
+            font-size: 1.2em;
+            color: #ff5722;
         }
     </style>
 </head>
@@ -68,7 +78,11 @@
     <!-- Authentication Section -->
     <div id="auth-section">
         <h2>로그인</h2>
-        <button id="google-login-button" class="auth-button">구글로 로그인</button>
+        <input id="email" class="auth-input" type="email" placeholder="이메일">
+        <input id="password" class="auth-input" type="password" placeholder="비밀번호">
+        <button id="login-button" class="auth-button">로그인</button>
+        <button id="signup-button" class="auth-button">회원가입</button>
+        <button id="logout-button" class="auth-button" style="display:none;">로그아웃</button>
     </div>
 
     <!-- Game Section -->
@@ -79,13 +93,18 @@
         <div id="probability-display"></div>
         <button id="increment-button">머니 올리기</button>
         <button id="rank-button">랭킹 보내기</button>
-        <button id="logout-button" class="auth-button">로그아웃</button>
+        <button id="logout-button" style="display:block;">로그아웃</button>
+        <!-- 공지 사항 -->
+        <div id="notice">
+            <div>맨 위에 1.00V</div>
+            <div>정식 출시 되었습니다.</div>
+        </div>
     </div>
 
     <!-- Firebase App (필수) -->
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
-      import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+      import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
       import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
       
       const firebaseConfig = {
@@ -109,25 +128,51 @@
         if (user) {
           document.getElementById('auth-section').style.display = 'none';
           document.getElementById('game-section').style.display = 'block';
-          document.getElementById('user-id').textContent = `ID: ${user.displayName || user.email}`;
-          document.getElementById('logout-button').style.display = 'inline-block';
+          document.getElementById('user-id').textContent = `Email: ${user.email}`;
           loadMoney();
         } else {
           document.getElementById('auth-section').style.display = 'block';
           document.getElementById('game-section').style.display = 'none';
-          document.getElementById('logout-button').style.display = 'none';
         }
       });
 
-      // 구글 로그인 함수
-      document.getElementById('google-login-button').addEventListener('click', () => {
-        const provider = new GoogleAuthProvider();
-        signInWithPopup(auth, provider)
-          .then(async (result) => {
-            // 로그인 성공 시 추가 작업을 여기에 작성할 수 있습니다.
+      // 로그인 함수
+      document.getElementById('login-button').addEventListener('click', () => {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        signInWithEmailAndPassword(auth, email, password)
+          .then(async (userCredential) => {
+            const user = userCredential.user;
+            const docRef = doc(db, 'users', user.email);
+
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+              const data = docSnap.data();
+              if (data.nickname) {
+                console.log('닉네임: ', data.nickname);
+              }
+            } else {
+              // 신규 사용자 문서 생성
+              await setDoc(docRef, { money: 0, nickname: email });
+            }
           })
           .catch((error) => {
             alert('로그인 실패: ' + error.message);
+          });
+      });
+
+      // 회원가입 함수
+      document.getElementById('signup-button').addEventListener('click', () => {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        createUserWithEmailAndPassword(auth, email, password)
+          .then(async (userCredential) => {
+            const user = userCredential.user;
+            const docRef = doc(db, 'users', user.email);
+            await setDoc(docRef, { money: 0, nickname: email });
+          })
+          .catch((error) => {
+            alert('회원가입 실패: ' + error.message);
           });
       });
 
@@ -135,6 +180,8 @@
       document.getElementById('logout-button').addEventListener('click', () => {
         signOut(auth)
           .then(() => {
+            document.getElementById('auth-section').style.display = 'block';
+            document.getElementById('game-section').style.display = 'none';
             console.log('로그아웃 성공');
           })
           .catch((error) => {
@@ -146,7 +193,7 @@
       async function loadMoney() {
         const user = auth.currentUser;
         if (user) {
-          const docRef = doc(db, 'users', user.uid);
+          const docRef = doc(db, 'users', user.email);
           const docSnap = await getDoc(docRef);
 
           if (docSnap.exists()) {
@@ -164,7 +211,7 @@
       async function saveMoney() {
         const user = auth.currentUser;
         if (user) {
-          const docRef = doc(db, 'users', user.uid);
+          const docRef = doc(db, 'users', user.email);
           await setDoc(docRef, { money: money }, { merge: true });
         }
       }
@@ -187,51 +234,28 @@
           earned = 10;
           probabilityText = "7% 확률";
         } else if (random < 30) {
-          earned = 1;
+          earned = 5;
           probabilityText = "20% 확률";
         } else {
-          earned = 0;
+          earned = 1;
           probabilityText = "70% 확률";
         }
 
         money += earned;
-        document.getElementById('last-earned').textContent = `최근 획득한 금액: ${earned}머니`;
-        document.getElementById('probability-display').textContent = `이번에 선택된 확률: ${probabilityText}`;
         updateDisplay();
         saveMoney();
+        document.getElementById('last-earned').textContent = `최근 획득한 금액: ${earned}머니`;
+        document.getElementById('probability-display').textContent = `확률: ${probabilityText}`;
       }
 
-      // 랭킹 정보를 Firestore에 저장하는 함수
-      function sendRanking() {
-        const lastSendTime = localStorage.getItem('lastSendTime');
-        const currentTime = new Date().getTime();
-
-        if (lastSendTime && (currentTime - lastSendTime < cooldownTime)) {
-          const remainingTime = Math.ceil((cooldownTime - (currentTime - lastSendTime)) / 1000);
-          alert(`쿨타임이 ${remainingTime}초 남았습니다.`);
-          return;
-        }
-
-        const rankingRef = doc(db, 'rankings', auth.currentUser.uid);
-        
-        setDoc(rankingRef, {
-          money: money,
-          timestamp: new Date()
-        }).then(() => {
-          localStorage.setItem('lastSendTime', currentTime);
-          alert('랭킹 정보가 Firestore에 저장되었습니다!');
-        }).catch((error) => {
-          alert('랭킹 정보 저장 실패: ' + error.message);
-        });
-      }
-
-      // 이벤트 리스너 설정
+      // 머니 올리기 버튼 클릭 이벤트
       document.getElementById('increment-button').addEventListener('click', earnMoney);
-      document.getElementById('rank-button').addEventListener('click', sendRanking);
 
-      // 쿨타임 설정 (1200초 = 20분)
-      const cooldownTime = 1200 * 1000; // 밀리초 단위
+      // 랭킹 보내기 버튼 클릭 이벤트
+      document.getElementById('rank-button').addEventListener('click', async () => {
+        // 랭킹 보내기 기능을 구현하세요
+        alert('랭킹을 보내는 기능은 현재 준비 중입니다.');
+      });
     </script>
-
 </body>
 </html>

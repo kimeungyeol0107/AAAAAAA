@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>돈 클릭랭커 게임</title>
     <style>
+        /* 스타일은 그대로 유지 */
         body {
             font-family: Arial, sans-serif;
             text-align: center;
@@ -109,16 +110,16 @@
       const auth = getAuth(app);
       const db = getFirestore(app);
 
+      let money = 0;
+
       // 인증 상태 변경 감지
       onAuthStateChanged(auth, (user) => {
         if (user) {
-          // 사용자 로그인 상태
           document.getElementById('auth-section').style.display = 'none';
           document.getElementById('game-section').style.display = 'block';
           document.getElementById('user-id').textContent = `ID: ${user.uid}`;
           loadMoney();
         } else {
-          // 사용자 로그아웃 상태
           document.getElementById('auth-section').style.display = 'block';
           document.getElementById('game-section').style.display = 'none';
         }
@@ -130,7 +131,6 @@
         const password = document.getElementById('password').value;
         signInWithEmailAndPassword(auth, email, password)
           .then(async (userCredential) => {
-            // 로그인 성공
             const user = userCredential.user;
             const deviceId = getDeviceId();
             const docRef = doc(db, 'devices', user.uid);
@@ -139,12 +139,10 @@
             if (docSnap.exists()) {
               const data = docSnap.data();
               if (data.deviceId !== deviceId) {
-                // 다른 기기에서 로그인 시도
                 alert('이 계정은 다른 기기에서 이미 로그인되어 있습니다.');
                 await signOut(auth);
               }
             } else {
-              // 기기 정보 저장
               await setDoc(docRef, { deviceId: deviceId });
             }
           })
@@ -159,10 +157,8 @@
         const password = document.getElementById('password').value;
         createUserWithEmailAndPassword(auth, email, password)
           .then(async (userCredential) => {
-            // 회원가입 성공
             const user = userCredential.user;
             const deviceId = getDeviceId();
-            // 기기 정보 저장
             await setDoc(doc(db, 'devices', user.uid), { deviceId: deviceId });
           })
           .catch((error) => {
@@ -183,7 +179,6 @@
 
       // 기기 ID 가져오기
       function getDeviceId() {
-        // 기기 식별자, 여기서는 User-Agent를 사용함
         return navigator.userAgent;
       }
 
@@ -221,21 +216,21 @@
 
       // 돈을 획득하는 함수
       function earnMoney() {
-        const random = Math.random() * 100; // 0에서 100 사이의 난수 생성
+        const random = Math.random() * 100;
         let earned = 0;
         let probabilityText = "";
 
         if (random < 3) {
-          earned = 50; // 3% 확률로 50머니
+          earned = 50;
           probabilityText = "3% 확률";
         } else if (random < 10) {
-          earned = 10; // 7% 확률로 10머니
+          earned = 10;
           probabilityText = "7% 확률";
         } else if (random < 30) {
-          earned = 1; // 20% 확률로 1머니
+          earned = 1;
           probabilityText = "20% 확률";
         } else {
-          earned = 0; // 70% 확률로 0머니
+          earned = 0;
           probabilityText = "70% 확률";
         }
 
@@ -243,7 +238,7 @@
         document.getElementById('last-earned').textContent = `최근 획득한 금액: ${earned}머니`;
         document.getElementById('probability-display').textContent = `이번에 선택된 확률: ${probabilityText}`;
         updateDisplay();
-        saveMoney(); // Firestore에 금액 저장
+        saveMoney();
       }
 
       // 랭킹 정보를 Firestore에 저장하는 함수

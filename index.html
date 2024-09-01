@@ -109,8 +109,6 @@
       const auth = getAuth(app);
       const db = getFirestore(app);
 
-      let money = 0; // 금액 초기화
-
       // 인증 상태 변경 감지
       onAuthStateChanged(auth, (user) => {
         if (user) {
@@ -118,7 +116,7 @@
           document.getElementById('auth-section').style.display = 'none';
           document.getElementById('game-section').style.display = 'block';
           document.getElementById('user-id').textContent = `ID: ${user.uid}`;
-          loadMoney(); // 로그인 시 돈을 불러옵니다
+          loadMoney();
         } else {
           // 사용자 로그아웃 상태
           document.getElementById('auth-section').style.display = 'block';
@@ -131,9 +129,24 @@
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         signInWithEmailAndPassword(auth, email, password)
-          .then((userCredential) => {
+          .then(async (userCredential) => {
             // 로그인 성공
-            console.log('로그인 성공:', userCredential.user);
+            const user = userCredential.user;
+            const deviceId = getDeviceId();
+            const docRef = doc(db, 'devices', user.uid);
+
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+              const data = docSnap.data();
+              if (data.deviceId !== deviceId) {
+                // 다른 기기에서 로그인 시도
+                alert('이 계정은 다른 기기에서 이미 로그인되어 있습니다.');
+                await signOut(auth);
+              }
+            } else {
+              // 기기 정보 저장
+              await setDoc(docRef, { deviceId: deviceId });
+            }
           })
           .catch((error) => {
             alert('로그인 실패: ' + error.message);
@@ -145,9 +158,12 @@
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         createUserWithEmailAndPassword(auth, email, password)
-          .then((userCredential) => {
+          .then(async (userCredential) => {
             // 회원가입 성공
-            console.log('회원가입 성공:', userCredential.user);
+            const user = userCredential.user;
+            const deviceId = getDeviceId();
+            // 기기 정보 저장
+            await setDoc(doc(db, 'devices', user.uid), { deviceId: deviceId });
           })
           .catch((error) => {
             alert('회원가입 실패: ' + error.message);
@@ -164,6 +180,12 @@
             alert('로그아웃 실패: ' + error.message);
           });
       });
+
+      // 기기 ID 가져오기
+      function getDeviceId() {
+        // 기기 식별자, 여기서는 User-Agent를 사용함
+        return navigator.userAgent;
+      }
 
       // Firestore에서 금액을 불러오는 함수
       async function loadMoney() {

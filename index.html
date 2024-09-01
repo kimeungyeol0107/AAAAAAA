@@ -109,6 +109,8 @@
       const auth = getAuth(app);
       const db = getFirestore(app);
 
+      let money = 0; // 금액 초기화
+
       // 인증 상태 변경 감지
       onAuthStateChanged(auth, (user) => {
         if (user) {

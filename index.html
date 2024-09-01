@@ -107,10 +107,12 @@
           document.getElementById('auth-section').style.display = 'none';
           document.getElementById('game-section').style.display = 'block';
           document.getElementById('user-id').textContent = `ID: ${user.displayName || user.email}`;
+          document.getElementById('logout-button').style.display = 'inline-block';
           loadMoney();
         } else {
           document.getElementById('auth-section').style.display = 'block';
           document.getElementById('game-section').style.display = 'none';
+          document.getElementById('logout-button').style.display = 'none';
         }
       });
 
@@ -119,8 +121,7 @@
         const provider = new GoogleAuthProvider();
         signInWithPopup(auth, provider)
           .then(async (result) => {
-            const user = result.user;
-            // 추가 작업이 필요하면 여기에 작성
+            // 로그인 성공 시 추가 작업을 여기에 작성할 수 있습니다.
           })
           .catch((error) => {
             alert('로그인 실패: ' + error.message);

@@ -93,7 +93,7 @@
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
       import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
-      import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+      import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
       
       const firebaseConfig = {
         apiKey: "AIzaSyAwV8u5P9-MFH7Wr3aCKRMesmetMDFF4VA",
@@ -116,7 +116,7 @@
           document.getElementById('auth-section').style.display = 'none';
           document.getElementById('game-section').style.display = 'block';
           document.getElementById('user-id').textContent = `ID: ${user.uid}`;
-          updateDisplay();
+          loadMoney();
         } else {
           // 사용자 로그아웃 상태
           document.getElementById('auth-section').style.display = 'block';
@@ -163,8 +163,32 @@
           });
       });
 
-      // 로컬 스토리지에서 기존 금액을 가져옵니다.
-      let money = localStorage.getItem('money') ? parseInt(localStorage.getItem('money')) : 0;
+      // Firestore에서 금액을 불러오는 함수
+      async function loadMoney() {
+        const user = auth.currentUser;
+        if (user) {
+          const docRef = doc(db, 'users', user.uid);
+          const docSnap = await getDoc(docRef);
+
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            money = data.money || 0;
+          } else {
+            money = 0; // 문서가 존재하지 않을 경우
+          }
+
+          updateDisplay();
+        }
+      }
+
+      // Firestore에 금액을 저장하는 함수
+      async function saveMoney() {
+        const user = auth.currentUser;
+        if (user) {
+          const docRef = doc(db, 'users', user.uid);
+          await setDoc(docRef, { money: money }, { merge: true });
+        }
+      }
 
       // 금액을 화면에 표시하는 함수
       function updateDisplay() {
@@ -192,10 +216,10 @@
         }
 
         money += earned;
-        localStorage.setItem('money', money);
         document.getElementById('last-earned').textContent = `최근 획득한 금액: ${earned}머니`;
         document.getElementById('probability-display').textContent = `이번에 선택된 확률: ${probabilityText}`;
         updateDisplay();
+        saveMoney(); // Firestore에 금액 저장
       }
 
       // 랭킹 정보를 Firestore에 저장하는 함수

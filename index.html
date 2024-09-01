@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>돈 클릭랭커 게임</title>
     <style>
+        /* 스타일은 그대로 유지 */
         body {
             font-family: Arial, sans-serif;
             text-align: center;
@@ -72,9 +73,10 @@
     <!-- Authentication Section -->
     <div id="auth-section">
         <h2>로그인</h2>
-        <input id="phone-number" class="auth-input" type="text" placeholder="전화번호 (예: 01012345678)">
+        <input id="email" class="auth-input" type="email" placeholder="이메일">
+        <input id="password" class="auth-input" type="password" placeholder="비밀번호">
         <button id="login-button" class="auth-button">로그인</button>
-        <button id="signup-button" class="auth-button" style="display:none;">회원가입</button>
+        <button id="signup-button" class="auth-button">회원가입</button>
         <button id="logout-button" class="auth-button" style="display:none;">로그아웃</button>
     </div>
 
@@ -91,9 +93,9 @@
     <!-- Firebase App (필수) -->
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
-      import { getAuth, signInWithPhoneNumber, RecaptchaVerifier, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+      import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
       import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
-
+      
       const firebaseConfig = {
         apiKey: "AIzaSyAwV8u5P9-MFH7Wr3aCKRMesmetMDFF4VA",
         authDomain: "money0107-50727.firebaseapp.com",
@@ -110,16 +112,6 @@
 
       let money = 0;
 
-      // reCAPTCHA 설정
-      window.onload = function() {
-        window.recaptchaVerifier = new RecaptchaVerifier('login-button', {
-          'size': 'invisible',
-          'callback': function(response) {
-            // reCAPTCHA가 성공적으로 해결되었을 때의 콜백
-          }
-        }, auth);
-      }
-
       // 인증 상태 변경 감지
       onAuthStateChanged(auth, (user) => {
         if (user) {
@@ -135,30 +127,29 @@
 
       // 로그인 함수
       document.getElementById('login-button').addEventListener('click', () => {
-        const phoneNumber = document.getElementById('phone-number').value;
-        const appVerifier = window.recaptchaVerifier;
-
-        // 전화번호 입력이 올바른 형식인지 확인
-        if (!phoneNumber.startsWith('+82')) {
-          alert('전화번호는 국제 형식 (+82)을 사용해야 합니다.');
-          return;
-        }
-
-        signInWithPhoneNumber(auth, phoneNumber, appVerifier)
-          .then((confirmationResult) => {
-            // 인증 코드 입력 요청
-            const code = prompt('인증 코드를 입력하세요.');
-            return confirmationResult.confirm(code);
-          })
-          .then((result) => {
-            // 로그인 성공
-            const user = result.user;
-            console.log('로그인 성공:', user.uid);
-            document.getElementById('signup-button').style.display = 'none';
-            document.getElementById('logout-button').style.display = 'block';
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        signInWithEmailAndPassword(auth, email, password)
+          .then(async (userCredential) => {
+            const user = userCredential.user;
+            // 로그인 성공 후 추가 작업이 필요하면 여기에 작성
           })
           .catch((error) => {
             alert('로그인 실패: ' + error.message);
+          });
+      });
+
+      // 회원가입 함수
+      document.getElementById('signup-button').addEventListener('click', () => {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        createUserWithEmailAndPassword(auth, email, password)
+          .then(async (userCredential) => {
+            const user = userCredential.user;
+            // 회원가입 성공 후 추가 작업이 필요하면 여기에 작성
+          })
+          .catch((error) => {
+            alert('회원가입 실패: ' + error.message);
           });
       });
 
@@ -167,8 +158,6 @@
         signOut(auth)
           .then(() => {
             console.log('로그아웃 성공');
-            document.getElementById('signup-button').style.display = 'block';
-            document.getElementById('logout-button').style.display = 'none';
           })
           .catch((error) => {
             alert('로그아웃 실패: ' + error.message);

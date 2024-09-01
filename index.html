@@ -110,6 +110,16 @@
 
       let money = 0;
 
+      // reCAPTCHA 설정
+      window.onload = function() {
+        window.recaptchaVerifier = new RecaptchaVerifier('login-button', {
+          'size': 'invisible',
+          'callback': function(response) {
+            // reCAPTCHA가 성공적으로 해결되었을 때의 콜백
+          }
+        }, auth);
+      }
+
       // 인증 상태 변경 감지
       onAuthStateChanged(auth, (user) => {
         if (user) {
@@ -128,8 +138,15 @@
         const phoneNumber = document.getElementById('phone-number').value;
         const appVerifier = window.recaptchaVerifier;
 
+        // 전화번호 입력이 올바른 형식인지 확인
+        if (!phoneNumber.startsWith('+82')) {
+          alert('전화번호는 국제 형식 (+82)을 사용해야 합니다.');
+          return;
+        }
+
         signInWithPhoneNumber(auth, phoneNumber, appVerifier)
           .then((confirmationResult) => {
+            // 인증 코드 입력 요청
             const code = prompt('인증 코드를 입력하세요.');
             return confirmationResult.confirm(code);
           })
@@ -137,6 +154,8 @@
             // 로그인 성공
             const user = result.user;
             console.log('로그인 성공:', user.uid);
+            document.getElementById('signup-button').style.display = 'none';
+            document.getElementById('logout-button').style.display = 'block';
           })
           .catch((error) => {
             alert('로그인 실패: ' + error.message);
@@ -148,6 +167,8 @@
         signOut(auth)
           .then(() => {
             console.log('로그아웃 성공');
+            document.getElementById('signup-button').style.display = 'block';
+            document.getElementById('logout-button').style.display = 'none';
           })
           .catch((error) => {
             alert('로그아웃 실패: ' + error.message);
@@ -243,16 +264,6 @@
 
       // 쿨타임 설정 (1200초 = 20분)
       const cooldownTime = 1200 * 1000; // 밀리초 단위
-
-      // reCAPTCHA verifier 설정
-      window.onload = function() {
-        window.recaptchaVerifier = new RecaptchaVerifier('login-button', {
-          'size': 'invisible',
-          'callback': function(response) {
-            // reCAPTCHA가 성공적으로 해결되었을 때의 콜백
-          }
-        }, auth);
-      }
     </script>
 
 </body>

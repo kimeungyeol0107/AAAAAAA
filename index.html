@@ -295,8 +295,8 @@
       document.getElementById('buy-item-button').addEventListener('click', () => {
         if (money >= 1000) {
           money -= 1000;
-          remainingClicks = 9;
-          multiplier = 5;
+          remainingClicks = 9;  // 남은 클릭수
+          multiplier = 5;   // 배율
           updateDisplay();
           updateShopDisplay();
           saveData();

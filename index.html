@@ -30,7 +30,7 @@
             margin-top: 10px;
             color: #007bff;
         }
-        #increment-button, #rank-button, #logout-button {
+        #increment-button, #logout-button {
             background-color: #28a745;
             color: white;
             border: none;
@@ -40,7 +40,7 @@
             border-radius: 10px;
             margin: 10px;
         }
-        #increment-button:hover, #rank-button:hover, #logout-button:hover {
+        #increment-button:hover, #logout-button:hover {
             background-color: #218838;
         }
         .auth-section {
@@ -84,6 +84,18 @@
         #google-signin-button:hover {
             background-color: #c1351d;
         }
+        #ranking {
+            margin-top: 20px;
+            font-size: 1.2em;
+            color: #007bff;
+        }
+        #ranking ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        #ranking li {
+            margin: 5px 0;
+        }
     </style>
 </head>
 <body>
@@ -101,12 +113,16 @@
         <div id="last-earned">최근 획득한 금액: 0머니</div>
         <div id="probability-display"></div>
         <button id="increment-button">머니 올리기</button>
-        <button id="rank-button">랭킹 보내기</button>
         <button id="logout-button" style="display:block;">로그아웃</button>
         <!-- 공지 사항 -->
         <div id="notice">
-            <div>1.01V</div>
-            <div>구글 로그인으로 뜨지 않는 현상 패치</div>
+            <div>1.015V</div>
+            <div>랭킹추가</div>
+        </div>
+        <!-- 랭킹 표시 -->
+        <div id="ranking">
+            <h2>머니 랭킹</h2>
+            <ul id="ranking-list"></ul>
         </div>
     </div>
 
@@ -114,7 +130,7 @@
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
       import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
-      import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+      import { getFirestore, doc, setDoc, getDoc, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
       
       const firebaseConfig = {
         apiKey: "AIzaSyAwV8u5P9-MFH7Wr3aCKRMesmetMDFF4VA",
@@ -140,6 +156,7 @@
           document.getElementById('game-section').style.display = 'block';
           document.getElementById('user-id').textContent = `Email: ${user.email}`;
           loadMoney();
+          loadTopUsers(); // 랭킹 불러오기
         } else {
           document.getElementById('auth-section').style.display = 'block';
           document.getElementById('game-section').style.display = 'none';
@@ -242,11 +259,31 @@
       // 머니 올리기 버튼 클릭 이벤트
       document.getElementById('increment-button').addEventListener('click', earnMoney);
 
-      // 랭킹 보내기 버튼 클릭 이벤트
-      document.getElementById('rank-button').addEventListener('click', async () => {
-        // 랭킹 보내기 기능을 구현하세요
-        alert('랭킹을 보내는 기능은 현재 준비 중입니다.');
-      });
+      // Firestore에서 돈이 높은 5명을 불러오는 함수
+      async function loadTopUsers() {
+        const rankingList = document.getElementById('ranking-list');
+        rankingList.innerHTML = ''; // 이전 랭킹 초기화
+
+        const q = query(collection(db, 'users'), orderBy('money', 'desc'), limit(5));
+        const querySnapshot = await getDocs(q);
+
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          const email = data.nickname;
+          const maskedEmail = maskEmail(email);
+
+          const li = document.createElement('li');
+          li.textContent = `${maskedEmail}: ${data.money}머니`;
+          rankingList.appendChild(li);
+        });
+      }
+
+      // 이메일을 마스킹하는 함수
+      function maskEmail(email) {
+        const [localPart, domain] = email.split('@');
+        const maskedLocalPart = localPart.substring(0, 3) + 'X'.repeat(localPart.length - 3);
+        return `${maskedLocalPart}@${domain}`;
+      }
     </script>
 </body>
 </html>

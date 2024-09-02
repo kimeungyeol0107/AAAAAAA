@@ -30,7 +30,7 @@
             margin-top: 10px;
             color: #007bff;
         }
-        #increment-button, #logout-button {
+        #increment-button, #logout-button, #register-ranking-button {
             background-color: #28a745;
             color: white;
             border: none;
@@ -40,7 +40,7 @@
             border-radius: 10px;
             margin: 10px;
         }
-        #increment-button:hover, #logout-button:hover {
+        #increment-button:hover, #logout-button:hover, #register-ranking-button:hover {
             background-color: #218838;
         }
         .auth-section {
@@ -113,15 +113,16 @@
         <div id="last-earned">최근 획득한 금액: 0머니</div>
         <div id="probability-display"></div>
         <button id="increment-button">머니 올리기</button>
+        <button id="register-ranking-button">등록</button>
         <button id="logout-button" style="display:block;">로그아웃</button>
         <!-- 공지 사항 -->
         <div id="notice">
-            <div>1.015V</div>
-            <div>랭킹추가</div>
+            <div>1.01V</div>
+            <div>구글 로그인으로 뜨지 않는 현상 패치</div>
         </div>
         <!-- 랭킹 표시 -->
         <div id="ranking">
-            <h2>머니 랭킹</h2>
+            <h2>돈이 높은 5명</h2>
             <ul id="ranking-list"></ul>
         </div>
     </div>
@@ -148,6 +149,7 @@
       const provider = new GoogleAuthProvider();
 
       let money = 0;
+      let canRegister = true; // 버튼 등록 가능 여부
 
       // 인증 상태 변경 감지
       onAuthStateChanged(auth, (user) => {
@@ -284,6 +286,23 @@
         const maskedLocalPart = localPart.substring(0, 3) + 'X'.repeat(localPart.length - 3);
         return `${maskedLocalPart}@${domain}`;
       }
+
+      // 랭킹 등록 버튼 클릭 이벤트
+      document.getElementById('register-ranking-button').addEventListener('click', async () => {
+        if (canRegister) {
+          await loadTopUsers();
+          canRegister = false; // 버튼 비활성화
+          setTimeout(() => {
+            canRegister = true; // 버튼 활성화
+            document.getElementById('register-ranking-button').disabled = false;
+          }, 540000); // 540초 = 9분
+
+          // 쿨타임 동안 버튼 비활성화
+          document.getElementById('register-ranking-button').disabled = true;
+        } else {
+          alert('쿨타임 중입니다. 잠시 후에 다시 시도해주세요.');
+        }
+      });
     </script>
 </body>
 </html>

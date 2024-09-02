@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>돈 클릭랭커 게임</title>
     <style>
-        /* 스타일은 그대로 유지 */
+        /* 기존 스타일은 그대로 유지 */
         body {
             font-family: Arial, sans-serif;
             text-align: center;
@@ -84,6 +84,30 @@
         #google-signin-button:hover {
             background-color: #c1351d;
         }
+        #shop-section {
+            margin-top: 20px;
+            font-size: 1.2em;
+            color: #007bff;
+        }
+        .shop-item {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            display: inline-block;
+        }
+        .shop-item button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .shop-item button:hover {
+            background-color: #0056b3;
+        }
     </style>
 
     <!-- Infolinks 광고 스크립트 추가 -->
@@ -108,10 +132,22 @@
         <div id="probability-display"></div>
         <button id="increment-button">머니 올리기</button>
         <button id="logout-button" style="display:block;">로그아웃</button>
+        
         <!-- 공지 사항 -->
         <div id="notice">
-            <div>1.016V</div>
-            <div>랭킹 테스트후 삭제</div>
+            <div>1.02V</div>
+            <div>아이템 상점추가</div>
+        </div>
+
+        <!-- 아이템 상점 -->
+        <div id="shop-section">
+            <div class="shop-item">
+                <h3>돈복사</h3>
+                <p>설명: 5번 클릭동안 돈 5배 지급</p>
+                <p>가격: 1000머니</p>
+                <p id="clicks-remaining">남은 클릭수: 0</p>
+                <button id="buy-item-button">구매</button>
+            </div>
         </div>
     </div>
 
@@ -137,6 +173,8 @@
       const provider = new GoogleAuthProvider();
 
       let money = 0;
+      let multiplier = 1;
+      let remainingClicks = 0;
 
       // 인증 상태 변경 감지
       onAuthStateChanged(auth, (user) => {
@@ -195,26 +233,34 @@
           if (docSnap.exists()) {
             const data = docSnap.data();
             money = data.money || 0;
+            remainingClicks = data.remainingClicks || 0;
           } else {
             money = 0; // 문서가 존재하지 않을 경우
+            remainingClicks = 0;
           }
 
           updateDisplay();
+          updateShopDisplay();
         }
       }
 
-      // Firestore에 금액을 저장하는 함수
-      async function saveMoney() {
+      // Firestore에 금액과 아이템 정보를 저장하는 함수
+      async function saveData() {
         const user = auth.currentUser;
         if (user) {
           const docRef = doc(db, 'users', user.email);
-          await setDoc(docRef, { money: money }, { merge: true });
+          await setDoc(docRef, { money: money, remainingClicks: remainingClicks }, { merge: true });
         }
       }
 
       // 금액을 화면에 표시하는 함수
       function updateDisplay() {
         document.getElementById('money-display').textContent = money + '머니';
+      }
+
+      // 상점 아이템 정보를 화면에 표시하는 함수
+      function updateShopDisplay() {
+        document.getElementById('clicks-remaining').textContent = `남은 클릭수: ${remainingClicks}`;
       }
 
       // 돈을 획득하는 함수
@@ -237,15 +283,42 @@
           probabilityText = "70% 확률";
         }
 
+        earned *= multiplier;
         money += earned;
         updateDisplay();
-        saveMoney();
+        saveData();
         document.getElementById('last-earned').textContent = `최근 획득한 금액: ${earned}머니`;
         document.getElementById('probability-display').textContent = `확률: ${probabilityText}`;
       }
 
+      // 아이템 구매 함수
+      document.getElementById('buy-item-button').addEventListener('click', () => {
+        if (money >= 1000) {
+          money -= 1000;
+          remainingClicks = 5;
+          multiplier = 5;
+          updateDisplay();
+          updateShopDisplay();
+          saveData();
+        } else {
+          alert('돈이 부족합니다.');
+        }
+      });
+
       // 머니 올리기 버튼 클릭 이벤트
-      document.getElementById('increment-button').addEventListener('click', earnMoney);
+      document.getElementById('increment-button').addEventListener('click', () => {
+        if (remainingClicks > 0) {
+          earnMoney();
+          remainingClicks--;
+          updateShopDisplay();
+          if (remainingClicks === 0) {
+            multiplier = 1;
+          }
+          saveData();
+        } else {
+          earnMoney();
+        }
+      });
     </script>
 </body>
 </html>

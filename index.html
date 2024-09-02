@@ -143,7 +143,7 @@
         <div id="shop-section">
             <div class="shop-item">
                 <h3>돈복사</h3>
-                <p>설명: 5번 클릭동안 돈 5배 지급</p>
+                <p>설명: 9번 클릭동안 돈 5배 지급</p>
                 <p>가격: 1000머니</p>
                 <p id="clicks-remaining">남은 클릭수: 0</p>
                 <button id="buy-item-button">구매</button>
@@ -295,8 +295,8 @@
       document.getElementById('buy-item-button').addEventListener('click', () => {
         if (money >= 1000) {
           money -= 1000;
-          remainingClicks = 5;
-          multiplier = 5;
+          remainingClicks = 9;
+          multiplier = 9;
           updateDisplay();
           updateShopDisplay();
           saveData();

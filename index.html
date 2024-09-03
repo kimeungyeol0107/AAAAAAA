@@ -109,13 +109,6 @@
             background-color: #0056b3;
         }
     </style>
-
-    <!-- Infolinks 광고 스크립트 추가 -->
-    <script type="text/javascript">
-        var infolinks_pid = 3425131;
-        var infolinks_wsid = 0;
-    </script>
-    <script type="text/javascript" src="https://resources.infolinks.com/js/infolinks_main.js"></script>
 </head>
 <body>
     <!-- Authentication Section -->
@@ -175,6 +168,7 @@
       let money = 0;
       let multiplier = 1;
       let remainingClicks = 0;
+      let previousClicks = 0;
 
       // 인증 상태 변경 감지
       onAuthStateChanged(auth, (user) => {
@@ -234,9 +228,11 @@
             const data = docSnap.data();
             money = data.money || 0;
             remainingClicks = data.remainingClicks || 0;
+            previousClicks = data.previousClicks || 0;
           } else {
             money = 0; // 문서가 존재하지 않을 경우
             remainingClicks = 0;
+            previousClicks = 0;
           }
 
           updateDisplay();
@@ -249,7 +245,7 @@
         const user = auth.currentUser;
         if (user) {
           const docRef = doc(db, 'users', user.email);
-          await setDoc(docRef, { money: money, remainingClicks: remainingClicks }, { merge: true });
+          await setDoc(docRef, { money: money, remainingClicks: remainingClicks, previousClicks: previousClicks }, { merge: true });
         }
       }
 
@@ -295,7 +291,7 @@
       document.getElementById('buy-item-button').addEventListener('click', () => {
         if (money >= 1000) {
           money -= 1000;
-          remainingClicks = 9;  // 남은 클릭수
+          remainingClicks += 9;  // 기존 클릭수에 추가
           multiplier = 5;   // 배율
           updateDisplay();
           updateShopDisplay();
